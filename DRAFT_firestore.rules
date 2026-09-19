@@ -1,0 +1,32 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Default Catch-All: Deny all unauthenticated or unmatched access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Security Primitives
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Connection validation document
+    match /test/{docId} {
+      allow read: if isSignedIn();
+    }
+
+    // Central agency cloud document
+    // Morvello Cars Rental Management Platform
+    // Strictly restricted to authenticated team members via Firebase Authentication
+    match /agencies/{agencyId} {
+      allow read: if isSignedIn() && isValidId(agencyId);
+      allow write: if isSignedIn() && isValidId(agencyId);
+    }
+  }
+}
